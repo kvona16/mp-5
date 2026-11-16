@@ -1,69 +1,169 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
+
+import { useState } from "react";
+import { Button, TextField, FormHelperText } from "@mui/material";
 
 export default function Home() {
+  //state for form inputs, API responses and UI feedback
+  const [url, setUrl] = useState("");
+  const [alias, setAlias] = useState("");
+  const [shortUrl, setShortUrl] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    //submit the URL and custom alias to the backend API
+    event.preventDefault();
+    setError("");
+    setShortUrl("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/shorten", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, alias }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        //display validation or errors returned by server
+        setError(data.error || "Something went wrong.");
+      } else {
+        //make the full shareable URL using the current domain
+        const fullShortUrl = `${window.location.origin}/${data.alias}`;
+        setShortUrl(fullShortUrl);
+      }
+    } catch {
+      setError("Failed to connect to the server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+//copy the shortened URL to the clipboard with a confirmation
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shortUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      /* background image + layout */
+      <main className="min-h-screen flex flex-col items-center justify-center bg-cover bg-center p-6"
+            style={{ backgroundImage: `url('/microsoftbackground.png')` }}
+      >
+        <h1 className="text-2xl font-bold text-left text-white bg-blue-600 p-3 w-150"
+            style={{ fontFamily: '"MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif' }}
+        >
+          URL Shortener
+        </h1>
+        {/* main container and form for URL shortening */}
+        <form
+            className="w-150 p-10 bg-gray-300 shadow-md space-y-5"
+            onSubmit={handleSubmit}
+        >
+          {/* input for LONG URL */}
+          <TextField
+              variant="filled"
+              sx={{ backgroundColor: "white", width: "100%", border: 1, }}
+              label="Destination URL"
+              placeholder="https://example.com"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              required
+          />
+          {/* input for CUSTOM URL */}
+          <TextField
+              variant="filled"
+              sx={{ backgroundColor: "white", width: "100%", border: 1,  }}
+              label="Custom Alias"
+              placeholder="e.g. my-link"
+              value={alias}
+              onChange={(e) => setAlias(e.target.value)}
+              required
+          />
+
+          <FormHelperText>Enter a long URL and your custom alias.</FormHelperText>
+          {/* Button to copy shortened link */}
+          <Button
+              sx={{
+                width: "110px",
+                borderRadius: 0,
+                backgroundColor: "#d1d5db",
+                color: "black",
+                textTransform: "none",
+                fontFamily: '"MS Sans Serif", Tahoma, sans-serif',
+                borderTop: "2px solid #ffffff",
+                borderLeft: "2px solid #ffffff",
+                borderRight: "2px solid #4b5563",
+                borderBottom: "2px solid #4b5563",
+                boxShadow: "none",
+                "&:hover": {
+                  backgroundColor: "#e5e7eb",
+                  boxShadow: "none",
+                },
+              }}
+              variant="contained"
+              type="submit"
+              disabled={loading || !url || !alias}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+            {loading ? "Shortening..." : "Shorten"}
+          </Button>
+
+          {/* error message  */}
+          {error && (
+              <div className="p-3 bg-red-100 text-red-700 text-sm text-center">
+                {error}
+              </div>
+          )}
+
+          {/* Box that displays the shortened URL + copy button  */}
+          {shortUrl && (
+              <div className="p-4 bg-white shadow-inner space-y-2">
+                <p className="text-xs font-semibold text-black"
+                   style={{ fontFamily: '"MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif' }}
+                >Your shortened link:</p>
+                <div className="flex items-center justify-between bg-gray-50 p-2">
+                  <a
+                      href={shortUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline truncate mr-2 text-sm"
+                      style={{ fontFamily: '"MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif' }}
+                  >
+                    {shortUrl}
+                  </a>
+                  <Button
+                      sx={{
+                        width: "110px",
+                        borderRadius: 0,
+                        backgroundColor: "#d1d5db",
+                        color: "black",
+                        textTransform: "none",
+                        fontFamily: '"MS Sans Serif", Tahoma, sans-serif',
+                        borderTop: "2px solid #ffffff",
+                        borderLeft: "2px solid #ffffff",
+                        borderRight: "2px solid #4b5563",
+                        borderBottom: "2px solid #4b5563",
+                        boxShadow: "none",
+                        "&:hover": {
+                          backgroundColor: "#e5e7eb",
+                          boxShadow: "none",
+                        },
+                      }}
+                      variant="outlined"
+                      size="small"
+                      onClick={handleCopy}
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+              </div>
+          )}
+        </form>
       </main>
-    </div>
   );
 }
