@@ -20,10 +20,16 @@ export async function POST(request: Request) {
 
         // validate that the string is a correctly formatted URL
         try {
-            new URL(url);
+            const parsedUrl = new URL(url);
+            if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                return NextResponse.json(
+                    { error: 'Invalid URL format. Must start with http:// or https://' },
+                    { status: 400 }
+                );
+            }
         } catch {
             return NextResponse.json(
-                { error: 'Invalid URL format. Please include http:// or https://' },
+                { error: 'Invalid URL format. Please enter a valid URL.' },
                 { status: 400 }
             );
         }
