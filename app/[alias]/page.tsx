@@ -1,6 +1,7 @@
 // app/[alias]/page.tsx
 import { redirect, notFound } from 'next/navigation';
 import getCollection from '@/db';
+import { Suspense } from "react";
 
 //database name to store shortened URL mappings
 const URLS_COLLECTION = 'urls';
@@ -9,8 +10,7 @@ interface PageProps {
     params: Promise<{ alias: string }>;
 }
 
-//gets the dynamic alias segment from the URL
-export default async function RedirectPage({ params }: PageProps) {
+async function AliasRedirect({ params }: PageProps): Promise<null> {
     const { alias } = await params;
 
     //see if database has a match
@@ -39,4 +39,13 @@ export default async function RedirectPage({ params }: PageProps) {
         // If it's a database or other error, show the 404 page
         notFound();
     }
+}
+
+//gets the dynamic alias segment from the URL
+export default function RedirectPage({ params }: PageProps) {
+    return (
+        <Suspense fallback={<p>Redirecting...</p>}>
+            <AliasRedirect params={params} />
+        </Suspense>
+    );
 }
